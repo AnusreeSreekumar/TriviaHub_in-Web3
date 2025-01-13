@@ -4,80 +4,75 @@ import ABI from '../assets/triviaHub.json';
 import Address from '../assets/deployed_addresses.json';
 
 const AddQuestions = ({ categoryData }) => {
-
-    // const [Category, setCategory] = useState(categoryData?.dbTitle || '');
-    const [categories, setCategories] = useState([]);
-    const [selectedCategory, setSelectedCategory] = useState("");
-    const [quizId, setQuizId] = useState()
+    const [categories, setCategories] = useState([]); // Store categories fetched from contract
+    const [selectedCategory, setSelectedCategory] = useState(""); // User-selected category
+    const [quizId, setQuizId] = useState("");
     const [questions, setQuestions] = useState([]);
     const [difficulty, setDifficulty] = useState('');
     const [isFileUploaded, setIsFileUploaded] = useState(false);
-    const [userData, setUserData] = useState(null);
-
-    const [contractInst, setContractInst] = useState(null); // To store the contract instance
-    const dfltQuizId = 301;
+    const [contractInst, setContractInst] = useState(null);
 
     const cAbi = ABI.abi;
+    // console.log("ABI", cAbi);
     const cAddress = Address['TriviaModule#triviaHub'];
+    // console.log("Address", cAddress)
 
+    // Initialize contract instance
     useEffect(() => {
         const initializeContract = async () => {
             try {
                 const provider = new BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
+
+                if (!cAbi || !cAddress) {
+                    console.error("ABI or contract address is missing.");
+                    return;
+                }
+
                 const contract = new Contract(cAddress, cAbi, signer);
+                console.log("Contract instance created:", contract);
                 setContractInst(contract);
             } catch (error) {
                 console.error("Error initializing contract instance:", error);
             }
         };
-
         initializeContract();
     }, []);
 
+    // Fetch categories once contract instance is available
     useEffect(() => {
         if (contractInst) {
-            fetchlatestQuizId();
             fetchCategoryList();
         }
     }, [contractInst]);
 
-
-    const fetchlatestQuizId = async () => {
-        try {
-            const latestId = await userData.getLatestQuizId();
-            setQuizId(latestId);
-        } catch (error) {
-            console.log("No Quiz set available:", error.message);
-            setQuizId(dfltQuizId);
-        }
-    };
-
+    // Function to fetch categories from the contract
     const fetchCategoryList = async () => {
         try {
-            const categoryList = await userData.listCategories();
+            const categoryList = await contractInst.listCategories();
+            console.log("Categories fetched from contract:", categoryList);
             setCategories(categoryList);
         } catch (error) {
-            console.log("No Quiz set available:", error.message);
+            console.log("No categories available:", error.message);
         }
     };
 
     const handleFileChange = (e) => {
-
         const file = e.target.files[0];
         if (file && file.type === 'application/json') {
             const reader = new FileReader();
             reader.onload = () => {
                 try {
                     const parsedData = JSON.parse(reader.result);
-                    console.log('Data in File', parsedData);
-
                     if (Array.isArray(parsedData.questions) && parsedData.questions.length > 0) {
-                        setQuestions(parsedData.questions);
+                        const updatedQuestions = parsedData.questions.map((q, index) => ({
+                            ...q,
+                            questionId: q.questionId || index + 1,
+                        }));
+                        setQuestions(updatedQuestions);
                     } else {
                         setQuestions([]);
                     }
-                    setDifficulty(parsedData.difficulty || '');
                     setIsFileUploaded(true);
                 } catch (error) {
                     console.log('Error parsing the JSON file:', error);
@@ -87,46 +82,33 @@ const AddQuestions = ({ categoryData }) => {
         } else {
             alert('Please upload a valid JSON file.');
         }
-    }
-
-    const handleQuestionChange = (index, field, value) => {
-        const updatedQuestions = [...questions];
-        updatedQuestions[index][field] = value;
-        setQuestions(updatedQuestions);
-        console.log(updatedQuestions);
-
-    }
+    };
 
     const handleSubmit = async (e) => {
+        e.preventDefault();
         try {
-            e.preventDefault();
+            if (!selectedCategory) {
+                alert("Please select a category.");
+                return;
+            }
 
-            const quizDetails = {
-                quizId: quizId,
-                category: selectedCategory,
-                questions: questions,
-                difficulty: difficulty,
-            };
-            console.log("Quiz Set: ", quizDetails);
-            const txnReceipt = await userData.addQuestionSet(
-                quizDetails.quizId,
-                quizDetails.category,
-                quizDetails.difficulty,
-                quizDetails.questions
-            )
-            console.log("Added Quiz set: ", txnReceipt);
+            console.log("Questions being submitted:", questions);
+            const txnReceipt = await contractInst.addQuestionSet(
+                quizId,
+                selectedCategory,
+                difficulty,
+                questions
+            );
+            console.log("Quiz set added successfully:", txnReceipt);
         } catch (error) {
-            console.log("Error while adding Quiz Set ", error);
-
+            console.error("Error while adding Quiz Set:", error);
         }
-    }
+    };
 
     return (
-        <div className="min-h-screen flex flex-col justify-center items-center">
+        <div className="min-h-screen flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto">
             <h2 className="form-title text-center mb-6 font-bold text-2xl text-purple-600 mt-8">Add Quiz</h2>
-            <form onSubmit={handleSubmit}>
-
-                {/* File Upload for JSON */}
+            {!isFileUploaded ? (
                 <div>
                     <label htmlFor="jsonFile">Upload JSON File:</label>
                     <input
@@ -136,48 +118,57 @@ const AddQuestions = ({ categoryData }) => {
                         className="file-input mb-4 ml-4"
                     />
                 </div>
-
-                {isFileUploaded && (
-                    <>
-                        {/* Category Selection */}
-                        <div>
-                            <label htmlFor="category">Select Category:</label>
-                            <select
-                                id="category"
-                                value={selectedCategory}
-                                onChange={(e) => setSelectedCategory(e.target.value)}
-                                className="form-select mb-4 ml-4 w-64 h-10"
-                            >
-                                <option value="">-- Select a Category --</option>
-                                {Array.isArray(categories) && categories.map((category) => (
-                                    <option key={category._id} value={category._id}>
-                                        {category.dbTitle}
+            ) : (
+                <form onSubmit={handleSubmit} className="w-full max-w-4xl p-4">
+                    <div>
+                        <label htmlFor="category">Select Category:</label>
+                        <select
+                            id="category"
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            className="form-select mb-4 ml-4 w-full p-2 border"
+                        >
+                            <option value="">-- Select a Category --</option>
+                            {categories.length > 0 ? (
+                                categories.map((category) => (
+                                    <option key={category.id} value={category.id}>
+                                        {category.name}
                                     </option>
-                                ))}
-                            </select>
-                        </div>
+                                ))
+                            ) : (
+                                <option>No categories available</option>
+                            )}
+                        </select>
+                    </div>
 
-                        {/* Difficulty */}
-                        <div>
-                            <label htmlFor="difficulty">Difficulty Level:</label>
-                            <input
-                                type="text"
-                                id="difficulty"
-                                value={difficulty}
-                                readOnly // Automatically filled
-                                className="ml-4"
-                            />
-                        </div>
-
-                        {/* Questions */}
-                        <h3 className="questions-title text-center mr-10 font-semibold my-4">Questions</h3>
+                    {/* User input for quiz ID */}
+                    <div>
                         <label htmlFor="quizId">Quiz ID:</label>
                         <input
                             type="text"
                             id="quizId"
                             value={quizId}
-                            className="quiz-id-input border ml-2 h-10 w-[200px] mb-4"
+                            onChange={(e) => setQuizId(e.target.value)}
+                            className="ml-4 p-2 border w-full mb-4"
+                            placeholder="Enter Quiz ID"
                         />
+                    </div>
+
+                    {/* User input for difficulty */}
+                    <div>
+                        <label htmlFor="difficulty">Difficulty Level:</label>
+                        <input
+                            type="text"
+                            id="difficulty"
+                            value={difficulty}
+                            onChange={(e) => setDifficulty(e.target.value)}
+                            className="ml-4 p-2 border w-full mb-4"
+                            placeholder="Enter difficulty level (e.g., Easy, Medium, Hard)"
+                        />
+                    </div>
+
+                    <div className="overflow-y-scroll max-h-96">
+                        <h3 className="questions-title text-center mr-10 font-semibold my-4">Questions</h3>
                         {questions.map((question, index) => (
                             <div key={index} className="question">
                                 <label>Question {index + 1}:</label>
@@ -185,7 +176,7 @@ const AddQuestions = ({ categoryData }) => {
                                     type="text"
                                     value={question.questionText || ''}
                                     onChange={(e) => handleQuestionChange(index, "questionText", e.target.value)}
-                                    className="question-input border ml-2 h-10 w-[550px] mb-4"
+                                    className="question-input border ml-2 h-10 w-full mb-4"
                                 />
                                 <div className="options">
                                     <label>Options:</label>
@@ -193,7 +184,7 @@ const AddQuestions = ({ categoryData }) => {
                                         <input
                                             key={optionIndex}
                                             type="text"
-                                            placeholder={`Option ${optionIndex + 1}`}
+                                            placeholder={ `Option ${optionIndex + 1}` }
                                             value={option || ''}
                                             onChange={(e) =>
                                                 handleQuestionChange(index, "options", [
@@ -216,17 +207,15 @@ const AddQuestions = ({ categoryData }) => {
                                 />
                             </div>
                         ))}
+                    </div>
 
-                        <button type="submit" className=" mt-6 submit-btn w-20 h-8 rounded-md bg-gray-400 hover:bg-gray-300">
-                        </button>
-
-                    </>
-                )}
-
-            </form>
-            {/* </div> */}
+                    <button type="submit" className="mt-6 submit-btn w-full py-2 rounded-md bg-gray-400 hover:bg-gray-300">
+                        Submit
+                    </button>
+                </form>
+            )}
         </div>
     );
 };
 
-export default AddQuestions
+export default AddQuestions;

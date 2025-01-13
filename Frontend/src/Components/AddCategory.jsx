@@ -39,11 +39,20 @@ const AddCategory = () => {
         } catch (error) {
             console.error("No categories available:", error.message);
             setCategoryId(dfltCtgryId);
+            console.log(dfltCtgryId);
+            
         }
     };
 
+    useEffect(() => {
+        setFormData((prevFormData) => ({
+            ...prevFormData,
+            categoryId: categoryId || dfltCtgryId, // Use the updated categoryId or default
+        }));
+    }, [categoryId]); 
+
     const [formData, setFormData] = useState({
-        categoryId: '',
+        categoryId: dfltCtgryId,
         categoryType: '',
         title: '',
         numofQns: 0,

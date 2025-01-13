@@ -5,14 +5,14 @@ contract triviaHub {
     address public admin;
 
     struct Category {
-        uint8 catgryId;
+        uint256 catgryId;
         string catgryType;
         string title;
         uint256 numberOfQuestions;
     }
-    uint public latestCatgId;
-    mapping(uint => Category) public Categories;
-    uint8[] public categoryIds;
+    uint256 public latestCatgId;
+    mapping(uint256 => Category) public Categories;
+    uint256[] public categoryIds;
     event addCatgry(uint, string, string);
 
     struct Player {
@@ -34,25 +34,23 @@ contract triviaHub {
     );
 
     struct Question {
-        uint256 questionId;
-        uint256 catgryId;
-        string difficulty;
         string questionText;
         string[] options;
         string correctOption;
-        uint256 createdAt;
     }
 
     struct QuestionSet {
-        uint8 setId;
-        uint8 catgryType;
+        uint256 setId;
+        string catgryType;
         string difficulty;
         Question[] questions;
+        address User;
+        uint256 createdAt;
     }
     uint256 public latestQuizId;
     mapping(uint256 => QuestionSet) public questionSets;
-    uint8[] public quizIds;
-    event addQstn(uint256, uint256);
+    uint256[] public quizIds;
+    event addQstn(uint256, string, address);
 
     constructor() {
         admin = msg.sender;
@@ -64,7 +62,7 @@ contract triviaHub {
     }
 
     function addCategory(
-        uint8 _catgryId,
+        uint256 _catgryId,
         string memory _catgryType,
         string memory _title,
         uint256 _numberOfQuestions
@@ -78,12 +76,13 @@ contract triviaHub {
         emit addCatgry(_catgryId, _catgryType, _title);
     }
 
-    function getLatestCategoryId() public view returns (uint8) {
+    function getLatestCategoryId() public view returns (uint256) {
         require(categoryIds.length > 0, "No categories available.");
         return categoryIds[categoryIds.length - 1];
     }
 
-    function listCategories() public view returns (Category[] memory) {
+    function getAllCategories() public view returns (Category[] memory) {
+        require(latestCatgId > 0, "No categories available.");
         Category[] memory categoryList = new Category[](latestCatgId);
         for (uint i = 1; i <= latestCatgId; i++) {
             categoryList[i - 1] = Categories[i];
@@ -91,11 +90,23 @@ contract triviaHub {
         return categoryList;
     }
 
+    function getLatestCategoryNameOrType()
+        public
+        view
+        returns (string memory name, string memory type_)
+    {
+        require(latestCatgId > 0, "No categories available.");
+        Category storage latestCategory = Categories[latestCatgId];
+        return (latestCategory.title, latestCategory.catgryType);
+    }
+
     function addQuestionSet(
-        uint8 _setId,
-        uint8 _catgryType,
+        uint256 _setId,
+        string memory _catgryType,
         string memory _difficulty,
-        Question[] memory _questions
+        Question[] memory _questions,
+        address _User,
+        uint256 _createdAt
     ) public onlyAdmin {
         QuestionSet storage newSet = questionSets[_setId];
         newSet.setId = _setId;
@@ -104,10 +115,12 @@ contract triviaHub {
         for (uint i = 0; i < _questions.length; i++) {
             newSet.questions.push(_questions[i]);
         }
-        emit addQstn(_setId, _catgryType);
+        newSet.User = msg.sender;
+        newSet.createdAt = block.timestamp;
+        emit addQstn(_setId, _catgryType, _User);
     }
 
-     function getLatestQuizId() public view returns (uint8) {
+    function getLatestQuizId() public view returns (uint256) {
         require(quizIds.length > 0, "No Quiz set available.");
         return quizIds[quizIds.length - 1];
     }
@@ -122,7 +135,7 @@ contract triviaHub {
 
     function copyQuestionSetToStorage(
         QuestionSet[] memory questionSetList
-    ) public onlyAdmin{
+    ) public onlyAdmin {
         for (uint256 i = 0; i < questionSetList.length; i++) {
             QuestionSet storage questionSet = questionSets[i];
             questionSet.setId = questionSetList[i].setId;
