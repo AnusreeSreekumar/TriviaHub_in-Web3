@@ -76,11 +76,6 @@ const AdminDashboard = () => {
     //     setQuizSummary(summary);
     // };
 
-    // open addcategory form as a pop-up window
-    // const handleAddCategoryClick = () => {
-    //     setShowPopup(true); // Open the pop-up
-    // };
-
     // Modal control
     const openModal = (content) => {
         setModalContent(content);
@@ -97,11 +92,6 @@ const AdminDashboard = () => {
     //     setSelectedCategoryData({ catgryId, catgryType, title });
     //     setShowPopup(false); // Close the pop-up once category is added
     // };
-
-    const handleAddQuestionSet = (categoryData) => {
-        setSelectedCategoryData(categoryData); // Set category data for the question set
-        setShowPopup(true); // Show the pop-up
-    };
 
     // const handleCopyQuestionSet = async (questionSetId) => {
     //     await catgryInstance.copyQuestionSetToStorage(questionSetId);
@@ -120,34 +110,18 @@ const AdminDashboard = () => {
                     <p>Recent activity and quick stats</p>
                 </section> */}
             <div className='grid grid-cols-2 space-y-8'>
-                <section id="categories" className='bg-blue-400 border-4 border-zinc-200 w-[350px] h-[230px] mx-10 my-10'>
-                    <h2>Categories</h2>
-                    <button onClick={() => openModal(<AddCategory />)} className='mt-20 w-32 h-18 bg-red-300 rounded-md'>Add Category</button>
-                    {/* {showPopup && <AddCategory onCategoryAdded={handleCategoryAdded} />} */}
+                <section id="categories" className='bg-blue-400 border-4 border-zinc-200 w-[350px] h-[230px] shadow-xl shadow-gray-600 mx-32 my-20'>
+                    <h2 className='mt-10 font-serif text-lg font-semibold text-zinc-800 hover:text-zinc-600'>Categories</h2>
+                    <button onClick={() => openModal(<AddCategory />)} className='mt-10 w-32 h-14 bg-yellow-300 rounded-lg'>Add Category</button>
+    
                 </section>
 
-                <section id="question-sets" className='bg-blue-400 border-4 border-zinc-200 w-[350px] h-[230px] mx-10 my-10'>
-                    <h2>Question Sets</h2>
-                    <button onClick={() => handleAddQuestionSet(selectedCategoryData)}>Add Question Set</button>
-                    {/* <ul>
-                        {questionSets.map((set, index) => (
-                            <li key={index}>
-                                {set.name}
-                                <button onClick={() => handleCopyQuestionSet(set.id)}>Copy</button>
-                            </li>
-                        ))}
-                    </ul> */}
-                    {showPopup && selectedCategoryData && (
-                        <div className="popup">
-                            <div className="popup-content">
-                                <button onClick={handleClosePopup}>Close</button>
-                                <AddQuestions categoryData={selectedCategoryData} />
-                            </div>
-                        </div>
-                    )}
+                <section id="question-sets" className='bg-blue-400 border-4 border-zinc-200 w-[350px] h-[230px] shadow-xl shadow-gray-600 mx-20 mt-25'>
+                    <h2 className='mt-10 font-serif text-lg font-semibold text-zinc-800 hover:text-zinc-600'>Question Sets</h2>
+                    <button onClick={() => openModal(<AddQuestions />)} className='mt-10 w-36 h-14 bg-yellow-300 rounded-lg'>Add Question Set</button>
                 </section>
 
-                <section id="players" className='bg-blue-400 border-4 border-zinc-200 w-[350px] h-[230px] mx-10 my-10'>
+                <section id="players" className='bg-blue-400 border-4 border-zinc-200 w-[350px] h-[230px] mx-32 my-20'>
                     <h2>Players</h2>
                     {/* <ul>
                         {players.map((player, index) => (
@@ -158,7 +132,7 @@ const AdminDashboard = () => {
                     </ul> */}
                 </section>
 
-                <section id="quiz-summary" className='bg-blue-400 border-4 border-zinc-200 w-[350px] h-[230px] mx-10 my-10'>
+                <section id="quiz-summary" className='bg-blue-400 border-4 border-zinc-200 w-[350px] h-[230px] mx-20 my-10'>
                     <h2>Quiz Summary</h2>
                     {/* {quizSummary ? (
                         <p>{quizSummary}</p>

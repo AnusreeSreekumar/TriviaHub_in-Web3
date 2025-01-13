@@ -59,42 +59,42 @@ const AddCategory = () => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+    
         if (!contractInst) {
             console.error("Contract instance is not initialized.");
             return;
         }
-
+    
         try {
-            const updatedCategoryId = +formData.categoryId + 1;
-
             // Check if category already exists
-            const catgryExists = await contractInst.Categories(updatedCategoryId);
+            const catgryExists = await contractInst.Categories(formData.categoryId);
             if (catgryExists[0] !== '' && catgryExists[1] !== '') {
                 console.log("Category ID already exists:", catgryExists);
                 return;
             }
-
-            // Add new category
+    
+            // Add new category details first
             const txnReceipt = await contractInst.addCategory(
-                updatedCategoryId,
+                formData.categoryId,
                 formData.categoryType,
                 formData.title,
                 formData.numofQns
             );
             console.log("Transaction Receipt:", txnReceipt);
-
+    
             // Listen for the event
             contractInst.on('addCatgry', (catgryId, catgryType, title) => {
                 console.log('New Category Added:', catgryId, catgryType, title);
             });
-
-            // Update state with new category data
-            setFormData({
-                categoryId: updatedCategoryId,
+    
+            // Increment the category ID after adding the details
+            setFormData((prevState) => ({
+                ...prevState,
+                categoryId: +prevState.categoryId + 1, // Increment the categoryId
                 categoryType: '',
                 title: '',
                 numofQns: 0,
-            });
+            }));
         } catch (error) {
             console.error("Error uploading to Blockchain:", error);
         }

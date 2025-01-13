@@ -5,45 +5,60 @@ import Address from '../assets/deployed_addresses.json';
 
 const AddQuestions = ({ categoryData }) => {
 
-    const [selectedCategory, setSelectedCategory] = useState(categoryData?.dbTitle || '');
+    // const [Category, setCategory] = useState(categoryData?.dbTitle || '');
+    const [categories, setCategories] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState("");
     const [quizId, setQuizId] = useState()
     const [questions, setQuestions] = useState([]);
     const [difficulty, setDifficulty] = useState('');
     const [isFileUploaded, setIsFileUploaded] = useState(false);
     const [userData, setUserData] = useState(null);
 
+    const [contractInst, setContractInst] = useState(null); // To store the contract instance
+    const dfltQuizId = 301;
+
+    const cAbi = ABI.abi;
+    const cAddress = Address['TriviaModule#triviaHub'];
+
     useEffect(() => {
-        const fetchUser = async () => {
-            const user = await getUser();
-            setUserData(user); 
-        }
-        fetchUser();
-        latestQuizId(); 
-        handleCopyQuestionSet()
+        const initializeContract = async () => {
+            try {
+                const provider = new BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const contract = new Contract(cAddress, cAbi, signer);
+                setContractInst(contract);
+            } catch (error) {
+                console.error("Error initializing contract instance:", error);
+            }
+        };
+
+        initializeContract();
     }, []);
 
-    async function getUser() {
-        try {
-
-            const provider = new BrowserProvider(window.ethereum);
-            console.log("Provider initialized:", provider);
-            const signer = await provider.getSigner();
-            const cAbi = ABI.abi;
-            const cAddress = Address['TriviaModule#triviaHub']
-            const catgryInstance = new Contract(cAddress, cAbi, signer);
-            return catgryInstance;
-        } catch (error) {
-            console.log("Error during getUser details: ", error);
+    useEffect(() => {
+        if (contractInst) {
+            fetchlatestQuizId();
+            fetchCategoryList();
         }
-    }
+    }, [contractInst]);
 
-    const latestQuizId = async () => {
+
+    const fetchlatestQuizId = async () => {
         try {
             const latestId = await userData.getLatestQuizId();
             setQuizId(latestId);
         } catch (error) {
             console.log("No Quiz set available:", error.message);
-            setQuizId(301);
+            setQuizId(dfltQuizId);
+        }
+    };
+
+    const fetchCategoryList = async () => {
+        try {
+            const categoryList = await userData.listCategories();
+            setCategories(categoryList);
+        } catch (error) {
+            console.log("No Quiz set available:", error.message);
         }
     };
 
@@ -132,7 +147,6 @@ const AddQuestions = ({ categoryData }) => {
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value)}
                                 className="form-select mb-4 ml-4 w-64 h-10"
-                                disabled
                             >
                                 <option value="">-- Select a Category --</option>
                                 {Array.isArray(categories) && categories.map((category) => (
@@ -203,8 +217,7 @@ const AddQuestions = ({ categoryData }) => {
                             </div>
                         ))}
 
-                        <button type="submit" disabled={isLoading} className=" mt-6 submit-btn w-20 h-8 rounded-md bg-gray-400 hover:bg-gray-300">
-                            {isLoading ? 'Adding...' : 'Submit'}
+                        <button type="submit" className=" mt-6 submit-btn w-20 h-8 rounded-md bg-gray-400 hover:bg-gray-300">
                         </button>
 
                     </>
