@@ -1,30 +1,164 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react';
+import { Contract, BrowserProvider } from 'ethers';
+import ABI from '../assets/triviaHub.json';
+import Address from '../assets/deployed_addresses.json';
 
-const AddCategory = ({ onSubmit }) => {
+const AddCategory = () => {
+    const [categoryId, setCategoryId] = useState('');
+    const [contractInst, setContractInst] = useState(null); // To store the contract instance
+    const dfltCtgryId = 101;
 
-  const [formData, setFormData] = useState({
-    categoryId: "",
-    categoryType: "",
-    title: "",
-    description: "",
-  });
+    const cAbi = ABI.abi;
+    const cAddress = Address['TriviaModule#triviaHub'];
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
-  };
+    useEffect(() => {
+        const initializeContract = async () => {
+            try {
+                const provider = new BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const contract = new Contract(cAddress, cAbi, signer);
+                setContractInst(contract);
+            } catch (error) {
+                console.error("Error initializing contract instance:", error);
+            }
+        };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(formData);
-  };
+        initializeContract();
+    }, []);
 
-  return (
-    
-  )
-}
+    useEffect(() => {
+        if (contractInst) {
+            fetchLatestCategoryId();
+        }
+    }, [contractInst]);
 
-export default AddCategory
+    const fetchLatestCategoryId = async () => {
+        try {
+            const latestId = await contractInst.getLatestCategoryId();
+            setCategoryId(latestId);
+        } catch (error) {
+            console.error("No categories available:", error.message);
+            setCategoryId(dfltCtgryId);
+        }
+    };
+
+    const [formData, setFormData] = useState({
+        categoryId: '',
+        categoryType: '',
+        title: '',
+        numofQns: 0,
+    });
+
+    const handleChange = (e) => {
+        const { name, value, type } = e.target;
+        setFormData((prevState) => ({
+            ...prevState,
+            [name]: type === 'number' ? +value : value,
+        }));
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        if (!contractInst) {
+            console.error("Contract instance is not initialized.");
+            return;
+        }
+
+        try {
+            const updatedCategoryId = +formData.categoryId + 1;
+
+            // Check if category already exists
+            const catgryExists = await contractInst.Categories(updatedCategoryId);
+            if (catgryExists[0] !== '' && catgryExists[1] !== '') {
+                console.log("Category ID already exists:", catgryExists);
+                return;
+            }
+
+            // Add new category
+            const txnReceipt = await contractInst.addCategory(
+                updatedCategoryId,
+                formData.categoryType,
+                formData.title,
+                formData.numofQns
+            );
+            console.log("Transaction Receipt:", txnReceipt);
+
+            // Listen for the event
+            contractInst.on('addCatgry', (catgryId, catgryType, title) => {
+                console.log('New Category Added:', catgryId, catgryType, title);
+            });
+
+            // Update state with new category data
+            setFormData({
+                categoryId: updatedCategoryId,
+                categoryType: '',
+                title: '',
+                numofQns: 0,
+            });
+        } catch (error) {
+            console.error("Error uploading to Blockchain:", error);
+        }
+    };
+
+    return (
+        <div className='flex space-x-16'>
+            <form
+                onSubmit={handleSubmit}
+                className='bg-slate-300 w-80 mt-24 ml-32 rounded-lg border-4 h-[450px]'
+            >
+                <div className='mt-4 py-2 px-4'>
+                    <label>Category ID:</label>
+                    <input
+                        type='text'
+                        name='categoryId'
+                        value={formData.categoryId}
+                        onChange={handleChange}
+                        required
+                        className='mt-2'
+                    />
+                </div>
+                <div className='mt-4 py-2 px-4'>
+                    <label>Category Type:</label>
+                    <input
+                        type='text'
+                        name='categoryType'
+                        value={formData.categoryType}
+                        onChange={handleChange}
+                        required
+                        className='mt-2'
+                    />
+                </div>
+                <div className='mt-4 py-2 px-4'>
+                    <label>Title:</label>
+                    <input
+                        type='text'
+                        name='title'
+                        value={formData.title}
+                        onChange={handleChange}
+                        required
+                        className='mt-2'
+                    />
+                </div>
+                <div className='mt-4 py-2 px-4'>
+                    <label>Number of Questions:</label>
+                    <input
+                        type='number'
+                        name='numofQns'
+                        value={formData.numofQns}
+                        onChange={handleChange}
+                        required
+                        className='mt-2'
+                    />
+                </div>
+                <button
+                    type='submit'
+                    className='mt-4 bg-blue-500 w-20 h-8 mx-4 my-2 rounded hover:text-white focus:bg-blue-300'
+                >
+                    Add
+                </button>
+            </form>
+        </div>
+    );
+};
+
+export default AddCategory;

@@ -1,5 +1,7 @@
 import React from 'react';
-import AdminDashboard from './Pages/AdminPages/AdminDashboard';
+// import AdminDashboard from './Pages/AdminPages/AdminDashboard';
+import Login from './Pages/Login';
+import Dasboard from './Pages/AdminPages/Dashboard';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 const App = () =>{
@@ -8,7 +10,8 @@ const App = () =>{
     
     <Router>
       <Routes>
-         <Route path='/' element={<AdminDashboard />} />
+         <Route path='/' element={<Login />} />
+         <Route path='/admin' element={<Dasboard />} />
       </Routes>
     </Router>
   )
