@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
+import AddCertificate from '../Components/AddCertificate';
 import { BrowserProvider, Contract } from 'ethers';
 
 const Modal = ({ isOpen, closeModal, children }) => {
@@ -60,7 +60,7 @@ const AdminDashboard = () => {
                             </section>
                         </div>
                         <div>
-                            <button onClick={() => openModal(<AddCategory />)}
+                            <button onClick={() => openModal(<AddCertificate />)}
                             className="w-52 h-14 bg-yellow-300 text-gray-800 rounded-lg hover:bg-yellow-600 hover:text-white">
                                 Generate Certificate on TotalScores</button>
                         </div>

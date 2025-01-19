@@ -25,7 +25,6 @@ contract triviaHub {
 
     function addScores(
         uint256 _score,
-        string memory _date,
         string memory _gameType) public {
         uint256 tempScore = _score;
         string memory slctdgrade;
@@ -45,7 +44,7 @@ contract triviaHub {
         Scores[msg.sender] = scoreCert({
             score: _score,
             grade: slctdgrade,
-            date: _date,
+            date: block.timestamp,
             gameType: _gameType
         });
     }

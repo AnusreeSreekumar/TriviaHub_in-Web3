@@ -4,7 +4,7 @@ import ABI from '../assets/triviaHub.json';
 import Address from '../assets/deployed_addresses.json';
 
 const AddCategory = () => {
-    const [categoryId, setCategoryId] = useState('');
+    // const [categoryId, setCategoryId] = useState('');
     const [contractInst, setContractInst] = useState(null);
     const [signerAddress, setSignerAddress] = useState('');
 
@@ -29,23 +29,23 @@ const AddCategory = () => {
         initializeContract();
     }, []);
 
-    useEffect(() => {
-        if (contractInst) {
-            fetchLatestCategoryId();
-        }
-    }, [contractInst]);
+    // useEffect(() => {
+    //     if (contractInst) {
+    //         fetchPlayer();
+    //     }
+    // }, [contractInst]);
 
-    const fetchPlayer = async () => {
-        try {
-            const latestId = await contractInst.getScoreCert();
-            setCategoryId(latestId);
-        } catch (error) {
-            console.error("No categories available:", error.message);
-            setCategoryId(dfltCtgryId);
-            console.log(dfltCtgryId);
+    // const fetchPlayer = async () => {
+    //     try {
+    //         const latestId = await contractInst.getScoreCert();
+    //         setCategoryId(latestId);
+    //     } catch (error) {
+    //         console.error("No categories available:", error.message);
+    //         setCategoryId(dfltCtgryId);
+    //         console.log(dfltCtgryId);
             
-        }
-    };
+    //     }
+    // };
 
     useEffect(() => {
         setFormData((prevFormData) => ({
