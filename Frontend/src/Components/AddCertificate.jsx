@@ -5,8 +5,10 @@ import Address from '../assets/deployed_addresses.json';
 
 const AddCategory = () => {
     const [categoryId, setCategoryId] = useState('');
-    const [contractInst, setContractInst] = useState(null); // To store the contract instance
-    const dfltCtgryId = 101;
+    const [contractInst, setContractInst] = useState(null);
+    const [signerAddress, setSignerAddress] = useState('');
+
+    // const dfltCtgryId = 101;
 
     const cAbi = ABI.abi;
     const cAddress = Address['TriviaModule#triviaHub'];
@@ -16,6 +18,7 @@ const AddCategory = () => {
             try {
                 const provider = new BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
+                setSignerAddress(signer)
                 const contract = new Contract(cAddress, cAbi, signer);
                 setContractInst(contract);
             } catch (error) {
@@ -32,9 +35,9 @@ const AddCategory = () => {
         }
     }, [contractInst]);
 
-    const fetchLatestCategoryId = async () => {
+    const fetchPlayer = async () => {
         try {
-            const latestId = await contractInst.getLatestCategoryId();
+            const latestId = await contractInst.getScoreCert();
             setCategoryId(latestId);
         } catch (error) {
             console.error("No categories available:", error.message);
@@ -116,44 +119,44 @@ const AddCategory = () => {
                 className='bg-slate-300 w-80 mt-24 ml-32 rounded-lg border-4 h-[450px]'
             >
                 <div className='mt-4 py-2 px-4'>
-                    <label>Category ID:</label>
-                    <input
-                        type='text'
-                        name='categoryId'
-                        value={formData.categoryId}
-                        onChange={handleChange}
-                        required
-                        className='mt-2'
-                    />
-                </div>
-                <div className='mt-4 py-2 px-4'>
-                    <label>Category Type:</label>
-                    <input
-                        type='text'
-                        name='categoryType'
-                        value={formData.categoryType}
-                        onChange={handleChange}
-                        required
-                        className='mt-2'
-                    />
-                </div>
-                <div className='mt-4 py-2 px-4'>
-                    <label>Title:</label>
-                    <input
-                        type='text'
-                        name='title'
-                        value={formData.title}
-                        onChange={handleChange}
-                        required
-                        className='mt-2'
-                    />
-                </div>
-                <div className='mt-4 py-2 px-4'>
-                    <label>Number of Questions:</label>
+                    <label>Score:</label>
                     <input
                         type='number'
-                        name='numofQns'
-                        value={formData.numofQns}
+                        name='score'
+                        value={formData.score}
+                        onChange={handleChange}
+                        required
+                        className='mt-2'
+                    />
+                </div>
+                <div className='mt-4 py-2 px-4'>
+                    <label>Grade:</label>
+                    <input
+                        type='text'
+                        name='grade'
+                        value={formData.grade}
+                        onChange={handleChange}
+                        required
+                        className='mt-2'
+                    />
+                </div>
+                <div className='mt-4 py-2 px-4'>
+                    <label>Date:</label>
+                    <input
+                        type='text'
+                        name='date'
+                        value={formData.date}
+                        onChange={handleChange}
+                        required
+                        className='mt-2'
+                    />
+                </div>
+                <div className='mt-4 py-2 px-4'>
+                    <label>Category:</label>
+                    <input
+                        type='text'
+                        name='category'
+                        value={formData.category}
                         onChange={handleChange}
                         required
                         className='mt-2'

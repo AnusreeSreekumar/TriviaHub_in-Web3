@@ -3,9 +3,8 @@ import { Contract, BrowserProvider } from 'ethers';
 import ABI from '../assets/triviaHub.json';
 import Address from '../assets/deployed_addresses.json';
 
-const AddQuestions = ({ categoryData }) => {
-    const [categories, setCategories] = useState([]); // Store categories fetched from contract
-    const [selectedCategory, setSelectedCategory] = useState(""); // User-selected category
+const AddQuestions = () => {
+    const [catgryType, setCatgryType] = useState([]);
     const [quizId, setQuizId] = useState("");
     const [questions, setQuestions] = useState([]);
     const [difficulty, setDifficulty] = useState('');
@@ -38,24 +37,6 @@ const AddQuestions = ({ categoryData }) => {
         };
         initializeContract();
     }, []);
-
-    // Fetch categories once contract instance is available
-    useEffect(() => {
-        if (contractInst) {
-            fetchCategoryList();
-        }
-    }, [contractInst]);
-
-    // Function to fetch categories from the contract
-    const fetchCategoryList = async () => {
-        try {
-            const categoryList = await contractInst.listCategories();
-            console.log("Categories fetched from contract:", categoryList);
-            setCategories(categoryList);
-        } catch (error) {
-            console.log("No categories available:", error.message);
-        }
-    };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -95,7 +76,7 @@ const AddQuestions = ({ categoryData }) => {
             console.log("Questions being submitted:", questions);
             const txnReceipt = await contractInst.addQuestionSet(
                 quizId,
-                selectedCategory,
+                catgryType,
                 difficulty,
                 questions
             );
@@ -121,24 +102,15 @@ const AddQuestions = ({ categoryData }) => {
             ) : (
                 <form onSubmit={handleSubmit} className="w-full max-w-4xl p-4">
                     <div>
-                        <label htmlFor="category">Select Category:</label>
-                        <select
-                            id="category"
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="form-select mb-4 ml-4 w-full p-2 border"
-                        >
-                            <option value="">-- Select a Category --</option>
-                            {categories.length > 0 ? (
-                                categories.map((category) => (
-                                    <option key={category.id} value={category.id}>
-                                        {category.name}
-                                    </option>
-                                ))
-                            ) : (
-                                <option>No categories available</option>
-                            )}
-                        </select>
+                        <label htmlFor="quizId">Category Type</label>
+                        <input
+                            type="text"
+                            id="catgryType"
+                            value={catgryType}
+                            onChange={(e) => setCatgryType(e.target.value)}
+                            className="ml-4 p-2 border w-full mb-4"
+                            placeholder="Enter Quiz ID"
+                        />
                     </div>
 
                     {/* User input for quiz ID */}
