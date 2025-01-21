@@ -3,12 +3,13 @@ import { Contract, BrowserProvider } from 'ethers';
 import ABI from '../assets/triviaHub.json';
 import Address from '../assets/deployed_addresses.json';
 
-const AddCategory = () => {
-    // const [categoryId, setCategoryId] = useState('');
+const AddCertificate = () => {
     const [contractInst, setContractInst] = useState(null);
-    const [signerAddress, setSignerAddress] = useState('');
-
-    // const dfltCtgryId = 101;
+    const [selectedUser, setSelectedUser] = useState('');
+    const [score, setScore] = useState('');
+    const [data, setData] = useState({ existingUsers: [] });
+    const [quizData, setQuizData] = useState([]);
+    const [selectedQuiz, setSelectedQuiz] = useState('');
 
     const cAbi = ABI.abi;
     const cAddress = Address['TriviaModule#triviaHub'];
@@ -18,7 +19,12 @@ const AddCategory = () => {
             try {
                 const provider = new BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
-                setSignerAddress(signer)
+                console.log("Logged in address: ", signer.address);
+                if (!cAbi || !cAddress) {
+                    console.error("ABI or contract address is missing.");
+                    return;
+                }
+
                 const contract = new Contract(cAddress, cAbi, signer);
                 setContractInst(contract);
             } catch (error) {
@@ -29,137 +35,129 @@ const AddCategory = () => {
         initializeContract();
     }, []);
 
-    // useEffect(() => {
-    //     if (contractInst) {
-    //         fetchPlayer();
-    //     }
-    // }, [contractInst]);
-
-    // const fetchPlayer = async () => {
-    //     try {
-    //         const latestId = await contractInst.getScoreCert();
-    //         setCategoryId(latestId);
-    //     } catch (error) {
-    //         console.error("No categories available:", error.message);
-    //         setCategoryId(dfltCtgryId);
-    //         console.log(dfltCtgryId);
-            
-    //     }
-    // };
-
     useEffect(() => {
-        setFormData((prevFormData) => ({
-            ...prevFormData,
-            categoryId: categoryId || dfltCtgryId, // Use the updated categoryId or default
-        }));
-    }, [categoryId]); 
+        const fetchPlayerDtls = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/fetchUser', {
+                    credentials: 'include'
+                });
+                const result = await response.json();
+                console.log('Retrieved Data from DB: ', result);
+                setData(result);
+            }
+            catch (error) {
+                console.error('Error fetching quiz categories from Backend:', error);
+            }
+        };
 
-    const [formData, setFormData] = useState({
-        categoryId: dfltCtgryId,
-        categoryType: '',
-        title: '',
-        numofQns: 0,
-    });
+        fetchPlayerDtls();
+    }, []);
 
-    const handleChange = (e) => {
-        const { name, value, type } = e.target;
-        setFormData((prevState) => ({
-            ...prevState,
-            [name]: type === 'number' ? +value : value,
-        }));
+    const handleUserChange = (e) => {
+        const selectedUserAddress = e.target.value;
+        setSelectedUser(selectedUserAddress);
+
+        const user = data.existingUsers.find((user) => user.dbUser === selectedUserAddress);
+        if (user) {
+            setQuizData(user.dbScores);
+            setScore('');
+        }
+    };
+
+    const handleQuizTypeChange = (e) => {
+        const selectedQuizType = e.target.value;
+        setSelectedQuiz(selectedQuizType);
+
+        const selectedQuiz = quizData.find((quiz) => quiz.quizType === selectedQuizType);
+
+        if (selectedQuiz) {
+            setScore(selectedQuiz.score); // Set the score for the selected quiz type
+        }
     };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-    
+
         if (!contractInst) {
             console.error("Contract instance is not initialized.");
             return;
         }
-    
+
         try {
-            // Check if category already exists
-            const catgryExists = await contractInst.Categories(formData.categoryId);
-            if (catgryExists[0] !== '' && catgryExists[1] !== '') {
-                console.log("Category ID already exists:", catgryExists);
+            if (!selectedQuiz) {
+                console.error("Selected quiz data not found.");
                 return;
             }
-    
-            // Add new category details first
-            const txnReceipt = await contractInst.addCategory(
-                formData.categoryId,
-                formData.categoryType,
-                formData.title,
-                formData.numofQns
-            );
-            console.log("Transaction Receipt:", txnReceipt);
-    
-            // Listen for the event
-            contractInst.on('addCatgry', (catgryId, catgryType, title) => {
-                console.log('New Category Added:', catgryId, catgryType, title);
-            });
-    
-            // Increment the category ID after adding the details
-            setFormData((prevState) => ({
-                ...prevState,
-                categoryId: +prevState.categoryId + 1, // Increment the categoryId
-                categoryType: '',
-                title: '',
-                numofQns: 0,
-            }));
+
+            const existingPlayer = await contractInst.getScoreCert(selectedUser);
+            console.log('Existing Player: ',existingPlayer);
+            
+            if (existingPlayer[1] == score && existingPlayer[3] == selectedQuiz) {
+                console.log('Player details alreasy exists');
+                alert('Player details are present')
+            }
+            else {
+                const txnReceipt = await contractInst.addScores(selectedUser, score, selectedQuiz);
+                console.log("Transaction Receipt:", txnReceipt);
+                contractInst.on('scoreAdded', (user, grade, score, quizType) => {
+                    console.log('New Certificate Added:', user, grade, score, quizType);
+                });
+            }
         } catch (error) {
             console.error("Error uploading to Blockchain:", error);
         }
     };
 
     return (
-        <div className='flex space-x-16'>
+        <div className='flex space-x-16 pb-10'>
             <form
                 onSubmit={handleSubmit}
-                className='bg-slate-300 w-80 mt-24 ml-32 rounded-lg border-4 h-[450px]'
-            >
-                <div className='mt-4 py-2 px-4'>
+                className='bg-slate-300 w-[500px] mt-20 ml-[350px] rounded-lg border-4 h-[400px]'>
+                <div className="mt-4 py-2 px-4">
+                    <label>User:</label>
+                    <select
+                        value={selectedUser}
+                        onChange={handleUserChange}
+                        required
+                        className="mt-2"
+                    >
+                        <option value="" disabled>Select a user</option>
+                        {Array.isArray(data.existingUsers) && data.existingUsers.map((user) => (
+                            <option key={user._id} value={user.dbUser}>
+                                {user.dbUser}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div className="py-2 px-4 mt-6">
+                    <label>Quiz Type:</label>
+                    <select
+                        name="quizType"
+                        value={selectedQuiz}  // Use selectedQuiz state
+                        onChange={handleQuizTypeChange}
+                        required
+                        className="mt-2"
+                    >
+                        <option value="" disabled>
+                            Select a quiz type
+                        </option>
+                        {Array.isArray(quizData) &&
+                            quizData.map((quiz) => (
+                                <option key={quiz._id} value={quiz.quizType}>
+                                    {quiz.quizType}
+                                </option>
+                            ))}
+                    </select>
+                </div>
+                <div className="mt-6 py-2 px-4">
                     <label>Score:</label>
                     <input
-                        type='number'
-                        name='score'
-                        value={formData.score}
-                        onChange={handleChange}
+                        type="number"
+                        name="score"
+                        value={score}  // Show the score for the selected quiz type
+                        readOnly
                         required
-                        className='mt-2'
-                    />
-                </div>
-                <div className='mt-4 py-2 px-4'>
-                    <label>Grade:</label>
-                    <input
-                        type='text'
-                        name='grade'
-                        value={formData.grade}
-                        onChange={handleChange}
-                        required
-                        className='mt-2'
-                    />
-                </div>
-                <div className='mt-4 py-2 px-4'>
-                    <label>Date:</label>
-                    <input
-                        type='text'
-                        name='date'
-                        value={formData.date}
-                        onChange={handleChange}
-                        required
-                        className='mt-2'
-                    />
-                </div>
-                <div className='mt-4 py-2 px-4'>
-                    <label>Category:</label>
-                    <input
-                        type='text'
-                        name='category'
-                        value={formData.category}
-                        onChange={handleChange}
-                        required
-                        className='mt-2'
+                        className="mt-2 ml-4"
                     />
                 </div>
                 <button
@@ -173,4 +171,4 @@ const AddCategory = () => {
     );
 };
 
-export default AddCategory;
+export default AddCertificate;

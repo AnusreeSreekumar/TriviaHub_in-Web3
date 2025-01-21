@@ -3,7 +3,7 @@
 
 const { buildModule } = require("@nomicfoundation/hardhat-ignition/modules");
 
-module.exports = buildModule("trivia1Module", (m) => {
+module.exports = buildModule("trivia3Module", (m) => {
 
   const trivia = m.contract("triviaHub");
 

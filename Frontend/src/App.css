@@ -47,30 +47,30 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+.video-page html, .video-page body, .video-page #root {
   height: 100%;
   width: 100%;
   overflow: hidden;
 }
 
-.background-container {
+.video-page .background-container {
   position: relative;
   height: 100vh;
   width: 100%;
   overflow: hidden;
 }
 
-.video-background {
+.video-page .video-background {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Ensures the video covers the entire screen */
-  z-index: -1; /* Sends the video behind the content */
+  object-fit: cover; 
+  z-index: -1; 
 }
 
-.content-overlay {
+.video-page .content-overlay {
   position: relative;
   z-index: 1;
   display: flex;
@@ -82,3 +82,13 @@ html, body, #root {
   text-align: center;
 }
 
+body {
+  background: linear-gradient(
+    to right, 
+    rgba(67, 56, 147, 1) 10%,  /* indigo-400 */
+    rgba(6, 182, 212, 1) 30%,  /* cyan-500 */
+    rgba(16, 185, 129, 1) 90%  /* emerald-600 */
+  );
+  background-size: cover; 
+  background-position: center; 
+}

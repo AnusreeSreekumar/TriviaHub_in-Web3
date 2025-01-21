@@ -2,11 +2,27 @@
 pragma solidity 0.8.28;
 
 contract triviaHub {
+    struct playerSet {
+        address user;
+        playerScores score;
+        uint256 totalScore;
+    }
+
+    struct playerScores {
+        string quizType;
+        uint256 score;
+        uint256 date;
+    }
+
+    playerSet public Player;
+    event playerAdded(address, string, uint256, uint256);
+
     struct scoreCert {
+        address user;
         uint256 score;
         string grade;
-        string date;
-        string gameType;
+        uint256 date;
+        string quizType;
     }
 
     mapping(address => scoreCert) public Scores;
@@ -24,8 +40,9 @@ contract triviaHub {
     }
 
     function addScores(
+        address _user,
         uint256 _score,
-        string memory _gameType) public {
+        string memory _quizType) public onlyAdmin {
         uint256 tempScore = _score;
         string memory slctdgrade;
         if (tempScore >= 91 && tempScore <= 100) {
@@ -41,21 +58,28 @@ contract triviaHub {
         } else {
             slctdgrade = "F"; // Default return for scores below 50
         }
-        Scores[msg.sender] = scoreCert({
+        uint256 currentTimestamp = block.timestamp;
+        Scores[_user] = scoreCert({
+            user: _user,
             score: _score,
             grade: slctdgrade,
-            date: block.timestamp,
-            gameType: _gameType
+            date: currentTimestamp,
+            quizType: _quizType
         });
+        emit scoreAdded(msg.sender, slctdgrade, _score, _quizType);
     }
 
-    function getScoreCert(address user) public view returns (
+    function getScoreCert(address user)
+        public
+        view
+        returns (
+            address,
             uint256,
             string memory,
-            string memory,
-            string memory){
+            string memory
+        )
+    {
         scoreCert storage getCert = Scores[user];
-        return (getCert.score, getCert.grade, getCert.date, getCert.gameType);
+        return (getCert.user, getCert.score, getCert.grade, getCert.quizType);
     }
-
 }
